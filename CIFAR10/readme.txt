@@ -1,0 +1,1 @@
+please go to visit <http://www.cs.toronto.edu/~kriz/cifar.html> and download CIFAR-10 dataset, then put it under this folder.

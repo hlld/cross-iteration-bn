@@ -29,12 +29,6 @@ def losses(labels, logits, l2_factor=0.00001):
     l2_loss = regularization_loss(l2_factor)
     return cls_loss, l2_loss
 
-def shuffle(x, y):
-    index = np.random.permutation(y.shape[0])
-    x = x[index, ...]
-    y = y[index, :]
-    return x, y
-
 def main():
     mnist_path = 'MNIST'
     cifar10_path = 'CIFAR10'
@@ -54,12 +48,8 @@ def main():
         cifar10 = get_CIFAR10_data(cifar10_path)
         X_train = cifar10['X_train']
         y_train = np.eye(10)[cifar10['y_train']]
-        index = np.random.permutation(y_train.shape[0])
-        X_train = X_train[index, ...]
-        y_train = y_train[index, :]
         X_test = cifar10['X_val']
         y_test = np.eye(10)[cifar10['y_val']]
-
     else:
         mnist = input_data.read_data_sets(mnist_path, one_hot=True)
 
@@ -98,8 +88,8 @@ def main():
     train_ops = tf.group([optimizer_op, update_ops])
 
     for var in tf.global_variables():
-        print('=>' + var.op.name)
-    print('start network training...')
+        print('=> variable ' + var.op.name)
+    print('=> start network training...')
     test_accuracy = []
     train_loss = []
     saver = tf.train.Saver(max_to_keep=5)
@@ -108,6 +98,10 @@ def main():
     with tf.Session(config=config) as sess:
         sess.run(tf.global_variables_initializer())
         for epoch in range(1, train_epochs + 1):
+            if use_cifar10:
+                index = np.random.permutation(y_train.shape[0])
+                X_train = X_train[index, ...]
+                y_train = y_train[index, :]
             for batch in range(num_batchs):
                 if use_cifar10:
                     batch_inputs = X_train[batch:(batch+batch_size), ...]
@@ -120,7 +114,7 @@ def main():
                 if batch % 100 == 0:
                     gradient_np = sess.run(
                         gradient_op, feed_dict={inputs: batch_inputs, labels: batch_labels})
-                    print('batch: %d, norm of the gradient: %.5f' % (batch, gradient_np))
+                    print('=> batch: %d, norm of the gradient: %.5f' % (batch, gradient_np))
             if use_cifar10:
                 batch_inputs = X_test
                 batch_labels = y_test
@@ -132,7 +126,7 @@ def main():
                 feed_dict={inputs: batch_inputs, labels: batch_labels})
             train_loss.append(loss)
             test_accuracy.append(accuracy)
-            print('epoch: %d, loss: %.5f, accuracy: %.5f' % (epoch, loss, accuracy))
+            print('=> epoch: %d, loss: %.5f, accuracy: %.5f' % (epoch, loss, accuracy))
         saver.save(sess, '%s/model-%.5f.ckpt' % (model_path, accuracy), global_step=epoch)
 
     steps = range(train_epochs)

@@ -51,7 +51,7 @@ def main():
     accuracy_op = tf.reduce_mean(tf.cast(accuracy_condition, tf.float32))
 
     for var in tf.global_variables():
-        print('=>' + var.op.name)
+        print('=> variable ' + var.op.name)
     print('start network evaluation...')
     loader = tf.train.Saver()
     config = tf.ConfigProto(allow_soft_placement=True)
@@ -72,7 +72,7 @@ def main():
             batch_labels = mnist.test.labels
         accuracy = sess.run(accuracy_op, feed_dict={
             inputs: batch_inputs, labels: batch_labels})
-        print('accuracy: %.5f' % accuracy)
+        print('=> accuracy: %.5f' % accuracy)
 
 if __name__ == '__main__':
     main()

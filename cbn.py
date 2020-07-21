@@ -128,8 +128,8 @@ class BatchNormalization(object):
 
     def cbn_update(self, inputs, weight):
         mean, variance, mean_squared = self._moments(inputs)
-        mean_grad = tf.gradients(mean, weight)[0]
-        mean_squared_grad = tf.gradients(mean_squared, weight)[0]
+        mean_grad = tf.gradients(mean, weight, tf.ones_like(mean))[0]
+        mean_squared_grad = tf.gradients(mean_squared, weight, tf.ones_like(mean_squared))[0]
         mean = tf.squeeze(mean, axis=[1, 2])
         variance = tf.squeeze(variance, axis=[0, 1, 2])
         mean_squared = tf.squeeze(mean_squared, axis=[1, 2])
@@ -137,12 +137,17 @@ class BatchNormalization(object):
         mean_all = []
         mean_squared_all = []
         for k in range(self.num_iteration):
-            mean_t = self.pre_mean[k, :] + tf.reduce_sum(
-                self.pre_mean_grad[k, ...] * (weight - self.pre_weight[k, ...]), axis=[0, 1, 2])
+            # pytorch kernel weights format: [oc ic h, w].
+            value_t = self.pre_mean_grad[k, ...] * (weight - self.pre_weight[k, ...])
+            value_t = tf.transpose(value_t, (3, 2, 0, 1))
+            mean_t = self.pre_mean[k, :] + tf.reduce_sum(value_t, axis=[1, 2, 3])
             mean_all.append(tf.expand_dims(mean_t, axis=0))
-            mean_squared_t = self.pre_mean_squared[k, :] + tf.reduce_sum(
-                self.pre_mean_squared_grad[k, ...] * (weight - self.pre_weight[k, ...]), axis=[0, 1, 2])
+            
+            value_t = self.pre_mean_squared_grad[k, ...] * (weight - self.pre_weight[k, ...])
+            value_t = tf.transpose(value_t, (3, 2, 0, 1))
+            mean_squared_t = self.pre_mean_squared[k, :] + tf.reduce_sum(value_t, axis=[1, 2, 3])
             mean_squared_all.append(tf.expand_dims(mean_squared_t, axis=0))
+            
         mean_all = [mean, ] + mean_all
         mean_squared_all = [mean_squared, ] + mean_squared_all
         mean_all = tf.concat(mean_all, axis=0)

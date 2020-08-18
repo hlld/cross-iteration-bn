@@ -161,8 +161,8 @@ class BatchNormalization(object):
         mask = tf.cast(tf.greater_equal(sigma_squared_all, 0.0), dtype=tf.float32)
         count = tf.reduce_sum(mask, axis=0)
         count = tf.where(tf.less_equal(count, 0.0), tf.ones_like(count), count)
-        mean_compensated = tf.reduce_mean(mean_all, axis=0) / count
-        sigma_squared = tf.reduce_mean(mean_squared_all, axis=0) / count - tf.pow(mean_compensated, 2.0)
+        mean_compensated = tf.reduce_sum(mean_all, axis=0) / count
+        sigma_squared = tf.reduce_sum(mean_squared_all, axis=0) / count - tf.pow(mean_compensated, 2.0)
 
         pre_mean = self.pre_mean[:-1, :]
         pre_mean_update_op = tf.assign(
